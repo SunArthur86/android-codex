@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0d1117">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Codex Mobile — AI Coding Agent</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/mobile.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- ═══ TOP APP BAR ═══ -->
+  <header class="app-bar" id="app-bar">
+    <div class="app-bar-left">
+      <button class="icon-btn" id="btn-menu" aria-label="Menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="app-title">
+        <span class="codex-logo">⬢</span>
+        <span>Codex</span>
+      </div>
+    </div>
+    <div class="app-bar-right">
+      <div class="model-badge" id="model-badge">GLM-4-Plus</div>
+      <button class="icon-btn" id="btn-settings" aria-label="Settings">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══ MAIN CONTENT AREA ═══ -->
+  <main class="main-content" id="main-content">
+
+    <!-- ── CHAT VIEW (default) ── -->
+    <section class="view view-chat active" id="view-chat">
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-welcome" id="chat-welcome">
+          <div class="welcome-icon">⬢</div>
+          <h2>Codex Mobile</h2>
+          <p>AI 编程 Agent — 基于开源 Codex CLI 架构</p>
+          <div class="welcome-features">
+            <div class="feature-chip">🔧 自主读写文件</div>
+            <div class="feature-chip">⚡ 终端命令执行</div>
+            <div class="feature-chip">🧠 推理链可视化</div>
+            <div class="feature-chip">📝 代码差异预览</div>
+            <div class="feature-chip">🔄 上下文压缩</div>
+            <div class="feature-chip">🔍 Codex逆向分析</div>
+          </div>
+        </div>
+      </div>
+      <div class="reasoning-panel" id="reasoning-panel" style="display:none;">
+        <div class="reasoning-header" id="reasoning-toggle">
+          <span>🧠 推理过程</span>
+          <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="reasoning-body" id="reasoning-body"></div>
+      </div>
+      <div class="tool-timeline" id="tool-timeline"></div>
+    </section>
+
+    <!-- ── FILES VIEW ── -->
+    <section class="view view-files" id="view-files">
+      <div class="files-header">
+        <h3>📁 文件管理器</h3>
+        <div class="files-actions">
+          <button class="mini-btn" id="btn-new-file">📄</button>
+          <button class="mini-btn" id="btn-new-folder">📁</button>
+        </div>
+      </div>
+      <div class="file-breadcrumb" id="file-breadcrumb"><span>/</span></div>
+      <div class="file-list" id="file-list"></div>
+      <div class="code-viewer" id="code-viewer" style="display:none;">
+        <div class="viewer-header">
+          <span id="viewer-filename">file.swift</span>
+          <button class="mini-btn" id="btn-close-viewer">✕</button>
+        </div>
+        <pre class="viewer-content" id="viewer-content"></pre>
+      </div>
+    </section>
+
+    <!-- ── TERMINAL VIEW ── -->
+    <section class="view view-terminal" id="view-terminal">
+      <div class="terminal-screen" id="terminal-screen">
+        <div class="terminal-output" id="terminal-output"></div>
+        <div class="terminal-input-line">
+          <span class="terminal-prompt">$</span>
+          <input type="text" class="terminal-input" id="terminal-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="输入命令...">
+        </div>
+      </div>
+    </section>
+
+    <!-- ── ANALYSIS VIEW (Codex Reverse) ── -->
+    <section class="view view-analysis" id="view-analysis">
+      <div class="analysis-header">
+        <h3>🔬 Codex 逆向分析</h3>
+      </div>
+      <div class="analysis-content" id="analysis-content">
+        <div class="analysis-card" id="card-architecture">
+          <div class="card-title">🏗️ 架构分析</div>
+          <div class="card-body" id="arch-body"></div>
+        </div>
+        <div class="analysis-card" id="card-tools">
+          <div class="card-title">🛠️ 工具系统</div>
+          <div class="card-body" id="tools-body"></div>
+        </div>
+        <div class="analysis-card" id="card-compare">
+          <div class="card-title">⚖️ 功能对比</div>
+          <div class="card-body" id="compare-body"></div>
+        </div>
+        <div class="analysis-card" id="card-workflow">
+          <div class="card-title">🔄 Agent Loop 流程</div>
+          <div class="card-body" id="workflow-body"></div>
+        </div>
+        <div class="analysis-card" id="card-config">
+          <div class="card-title">⚙️ 配置系统</div>
+          <div class="card-body" id="config-body"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ═══ CHAT INPUT BAR ═══ -->
+  <div class="chat-input-bar" id="chat-input-bar">
+    <div class="approval-mode-selector">
+      <select id="approval-mode" class="approval-select">
+        <option value="suggest">🔒 需审批</option>
+        <option value="auto-edit">⚡ 自动编辑</option>
+        <option value="full-auto">🚀 全自动</option>
+      </select>
+    </div>
+    <div class="input-row">
+      <textarea id="chat-input" class="chat-input" placeholder="描述你的任务..." rows="1" autocomplete="off"></textarea>
+      <button class="send-btn" id="btn-send" aria-label="Send">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ BOTTOM NAVIGATION ═══ -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button class="nav-item active" data-view="chat">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>对话</span>
+    </button>
+    <button class="nav-item" data-view="files">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      <span>文件</span>
+    </button>
+    <button class="nav-item" data-view="terminal">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+      <span>终端</span>
+    </button>
+    <button class="nav-item" data-view="analysis">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>分析</span>
+    </button>
+  </nav>
+
+  <!-- ═══ SETTINGS BOTTOM SHEET ═══ -->
+  <div class="sheet-overlay" id="sheet-overlay"></div>
+  <div class="bottom-sheet" id="settings-sheet">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">设置</h3>
+    <div class="sheet-body">
+      <div class="setting-group">
+        <label>GLM API Key</label>
+        <input type="password" id="setting-api-key" placeholder="输入你的 GLM API Key">
+      </div>
+      <div class="setting-group">
+        <label>模型</label>
+        <select id="setting-model">
+          <option value="glm-4-plus">GLM-4-Plus (推荐)</option>
+          <option value="glm-4">GLM-4</option>
+          <option value="glm-4-flash">GLM-4-Flash (快速)</option>
+          <option value="glm-4-long">GLM-4-Long (长上下文)</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <label>Temperature: <span id="temp-val">0.7</span></label>
+        <input type="range" id="setting-temp" min="0" max="1" step="0.1" value="0.7">
+      </div>
+      <div class="setting-group">
+        <label>最大迭代轮数: <span id="max-iter-val">25</span></label>
+        <input type="range" id="setting-max-iter" min="5" max="50" step="5" value="25">
+      </div>
+      <div class="setting-group">
+        <label>主题</label>
+        <div class="theme-toggle">
+          <button class="theme-btn active" data-theme="dark">🌙 深色</button>
+          <button class="theme-btn" data-theme="light">☀️ 浅色</button>
+        </div>
+      </div>
+      <div class="setting-group">
+        <label>审批模式</label>
+        <select id="setting-approval">
+          <option value="suggest">需审批 (每次操作确认)</option>
+          <option value="auto-edit">自动编辑 (文件操作免确认)</option>
+          <option value="full-auto">全自动 (含命令执行)</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <label>项目目录</label>
+        <input type="text" id="setting-project" placeholder="/home/user/project" value="/workspace">
+      </div>
+      <button class="sheet-save-btn" id="btn-save-settings">保存设置</button>
+    </div>
+  </div>
+
+  <!-- ═══ APPROVAL DIALOG ═══ -->
+  <div class="approval-dialog" id="approval-dialog" style="display:none;">
+    <div class="approval-card">
+      <div class="approval-title" id="approval-title">确认操作</div>
+      <div class="approval-desc" id="approval-desc"></div>
+      <pre class="approval-diff" id="approval-diff"></pre>
+      <div class="approval-actions">
+        <button class="btn-deny" id="btn-approve-deny">拒绝</button>
+        <button class="btn-approve" id="btn-approve-yes">批准</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TOAST ═══ -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- ═══ SCRIPTS ═══ -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
