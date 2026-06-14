@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ── Brand palette ── -->
+    <color name="codex_primary">#FF2F81F7</color>
+    <color name="codex_primary_dark">#FF1A5FBF</color>
+
+    <!-- ── Surfaces ── -->
+    <color name="codex_bg">#FF0D1117</color>
+    <color name="codex_surface">#FF161B22</color>
+    <color name="codex_surface_light">#FF21262D</color>
+
+    <!-- ── Text ── -->
+    <color name="codex_text_primary">#FFE6EDF3</color>
+    <color name="codex_text_secondary">#FF8B949E</color>
+    <color name="codex_text_muted">#FF6E7681</color>
+
+    <!-- ── Accents ── -->
+    <color name="codex_success">#FF3FB950</color>
+    <color name="codex_warning">#FFD29922</color>
+    <color name="codex_error">#FFF85149</color>
+    <color name="codex_accent">#FF8957E5</color>
+
+    <!-- ── Common ── -->
+    <color name="codex_white">#FFFFFFFF</color>
+    <color name="codex_black">#FF000000</color>
+    <color name="codex_border">#FF30363D</color>
+
+</resources>

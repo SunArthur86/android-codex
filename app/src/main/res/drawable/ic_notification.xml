@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Codex Mobile — Notification Icon (Large / Status)
+
+    A hexagon glyph matching the ⬢ logo used throughout the PWA.
+    Designed as a 24dp vector drawable that renders well at notification
+    sizes.  Uses fillColor that can be tinted at runtime.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="@color/notification_icon_bg">
+
+    <!-- Hexagon outline (filled) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,2 L21,7 L21,17 L12,22 L3,17 L3,7 Z" />
+
+    <!-- Inner hexagon cutout (creates ring effect) -->
+    <path
+        android:fillColor="#FF0D1117"
+        android:pathData="M12,6 L17,9 L17,15 L12,18 L7,15 L7,9 Z" />
+
+    <!-- Center dot / terminal cursor -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M10.5,10 L14,12 L10.5,14 Z" />
+
+</vector>

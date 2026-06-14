@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Codex Mobile — Component Styles & Widget Definitions
+
+    Theme definitions live in themes.xml (Theme.CodexMobile).
+    This file provides reusable widget styles for the layout layer.
+
+    Styles defined:
+      • CodexWebView        — full-screen WebView (no scrollbars, dark bg)
+      • LoadingProgressBar  — top progress bar for page-load feedback
+      • SplashLogo          — hexagon ⬢ logo text appearance
+      • ErrorButton         — retry button styling
+-->
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- ════════════════════════════════════════════════ -->
+    <!--  WebView Style                                     -->
+    <!-- ════════════════════════════════════════════════ -->
+    <style name="CodexWebView">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:scrollbars">none</item>
+        <item name="android:overScrollMode">never</item>
+        <item name="android:background">@color/bg_primary</item>
+    </style>
+
+    <!-- ════════════════════════════════════════════════ -->
+    <!--  Loading Progress Bar                              -->
+    <!-- ════════════════════════════════════════════════ -->
+    <style name="LoadingProgressBar" parent="Widget.Material3.LinearProgressIndicator">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">3dp</item>
+        <item name="android:indeterminate">true</item>
+        <item name="android:visibility">gone</item>
+        <item name="indicatorColor">@color/accent</item>
+        <item name="trackColor">@color/bg_tertiary</item>
+    </style>
+
+    <!-- ════════════════════════════════════════════════ -->
+    <!--  Splash Logo TextAppearance                        -->
+    <!-- ════════════════════════════════════════════════ -->
+    <style name="SplashLogo">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">72sp</item>
+        <item name="android:textColor">@color/accent</item>
+    </style>
+
+    <!-- ════════════════════════════════════════════════ -->
+    <!--  Retry Button                                      -->
+    <!-- ════════════════════════════════════════════════ -->
+    <style name="ErrorButton" parent="Widget.Material3.Button">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="backgroundTint">@color/accent</item>
+        <item name="cornerRadius">24dp</item>
+        <item name="android:paddingStart">32dp</item>
+        <item name="android:paddingEnd">32dp</item>
+    </style>
+
+</resources>

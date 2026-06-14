@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Codex Mobile — Adaptive Launcher Icon Foreground
+
+    White hexagon with internal accent stroke, designed to sit on top
+    of ic_launcher_background within the 108dp adaptive icon safe zone
+    (visible area ≈ center 66dp).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Hexagon shape centered in 108x108 with 72dp visible diameter -->
+    <path
+        android:fillColor="#FF2F81F7"
+        android:pathData="M54,22 L80,37 L80,71 L54,86 L28,71 L28,37 Z" />
+
+    <!-- Inner hexagon -->
+    <path
+        android:fillColor="#FF0D1117"
+        android:pathData="M54,34 L70,43.5 L70,64.5 L54,74 L38,64.5 L38,43.5 Z" />
+
+    <!-- Terminal cursor ">" -->
+    <path
+        android:fillColor="#FF2F81F7"
+        android:pathData="M47,46 L60,54 L47,62 L47,58 L54,54 L47,50 Z" />
+
+</vector>

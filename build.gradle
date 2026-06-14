@@ -1,0 +1,6 @@
+// Top-level build file for Codex Mobile Android project
+// PWA WebView wrapper — no native modules needed
+
+plugins {
+    id 'com.android.application' version '8.2.0' apply false
+}

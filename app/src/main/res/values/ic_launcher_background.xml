@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Codex Mobile — Adaptive Launcher Icon Background
+
+    Solid color used behind the foreground layer of the adaptive icon.
+    Matches the app's dark theme primary background.
+-->
+<resources>
+    <color name="ic_launcher_background">#0D1117</color>
+</resources>

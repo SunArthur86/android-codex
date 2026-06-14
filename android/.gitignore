@@ -1,0 +1,39 @@
+# ── Gradle ──
+.gradle/
+build/
+*/build/
+.gradletasknamecache
+
+# ── Local config ──
+local.properties
+gradle.properties.local
+
+# ── IDE ──
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+
+# ── Android ──
+*.apk
+*.aab
+*.ap_
+*.dex
+*.keystore
+*.jks
+captures/
+
+# ── Native ──
+.cxx/
+*.so
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+
+# ── Logs ──
+*.log

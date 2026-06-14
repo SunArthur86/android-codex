@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Codex Mobile — Material Design 3 Theme
+
+    Base theme name: Theme.CodexMobile (referenced in AndroidManifest.xml)
+    Matches the PWA's dark palette from css/mobile.css:
+      --bg-primary:   #0d1117
+      --bg-secondary: #161b22
+      --accent:       #2f81f7
+-->
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- ════════════════════════════════════════════════ -->
+    <!--  Base Theme (Dark)                                 -->
+    <!-- ════════════════════════════════════════════════ -->
+    <style name="Theme.CodexMobile" parent="Theme.Material3.Dark.NoActionBar">
+        <!-- Primary surface colors matching PWA CSS variables -->
+        <item name="colorPrimary">@color/accent</item>
+        <item name="colorOnPrimary">@color/text_primary</item>
+        <item name="colorPrimaryContainer">@color/bg_tertiary</item>
+        <item name="colorOnPrimaryContainer">@color/text_primary</item>
+
+        <item name="colorSecondary">@color/accent</item>
+        <item name="colorOnSecondary">@color/text_primary</item>
+
+        <!-- Surface / background -->
+        <item name="android:colorBackground">@color/bg_primary</item>
+        <item name="colorSurface">@color/bg_secondary</item>
+        <item name="colorSurfaceVariant">@color/bg_tertiary</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/text_secondary</item>
+
+        <!-- Error -->
+        <item name="colorError">@color/error</item>
+        <item name="colorOnError">@color/text_primary</item>
+
+        <!-- Status & navigation bars -->
+        <item name="android:statusBarColor">@color/bg_primary</item>
+        <item name="android:navigationBarColor">@color/bg_secondary</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">false</item>
+
+        <!-- Edge-to-edge layout -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="o_mr1">shortEdges</item>
+
+        <!-- Popup / overflow menu -->
+        <item name="popupMenuBackground">@color/bg_elevated</item>
+    </style>
+
+    <!-- ════════════════════════════════════════════════ -->
+    <!--  Light Theme Variant                               -->
+    <!-- ════════════════════════════════════════════════ -->
+    <style name="Theme.CodexMobile.Light" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/accent_light</item>
+        <item name="colorOnPrimary">@color/text_primary_light</item>
+        <item name="colorPrimaryContainer">@color/bg_secondary_light</item>
+
+        <item name="android:colorBackground">@color/bg_primary_light</item>
+        <item name="colorSurface">@color/bg_primary_light</item>
+        <item name="colorOnSurface">@color/text_primary_light</item>
+        <item name="colorOnSurfaceVariant">@color/text_secondary_light</item>
+
+        <item name="colorError">@color/error</item>
+
+        <item name="android:statusBarColor">@color/bg_secondary_light</item>
+        <item name="android:navigationBarColor">@color/bg_primary_light</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
+
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="o_mr1">shortEdges</item>
+    </style>
+
+    <!-- ════════════════════════════════════════════════ -->
+    <!--  Splash / Launch Theme                             -->
+    <!-- ════════════════════════════════════════════════ -->
+    <style name="Theme.CodexMobile.Splash" parent="Theme.CodexMobile">
+        <item name="android:windowBackground">@color/splash_bg</item>
+        <item name="android:windowFullscreen">true</item>
+    </style>
+
+    <!-- ════════════════════════════════════════════════ -->
+    <!--  Fullscreen Activity Theme                         -->
+    <!-- ════════════════════════════════════════════════ -->
+    <style name="Theme.CodexMobile.Fullscreen" parent="Theme.CodexMobile">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+    </style>
+
+</resources>

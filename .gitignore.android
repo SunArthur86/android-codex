@@ -1,0 +1,17 @@
+# ── Android Build Outputs ──
+*.iml
+.gradle/
+/local.properties
+.idea/
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+
+# ── Gradle Wrapper JAR (tracked separately or generated) ──
+!gradle-wrapper.jar
+
+# ── Keystore ──
+*.jks
+*.keystore

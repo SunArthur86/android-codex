@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Codex Mobile — Notification Icon (Small / System Tray)
+
+    Per Material Design guidelines, small notification icons must be
+    white-on-transparent silhouettes — the system applies the tint.
+
+    This is a simplified single-path hexagon that stays legible at
+    24×24dp in the status bar.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Solid hexagon silhouette -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,2 L21,7 L21,17 L12,22 L3,17 L3,7 Z" />
+
+    <!-- Terminal cursor ">" cutout for brand identity -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M9.5,9.5 L13.5,12 L9.5,14.5" />
+
+</vector>

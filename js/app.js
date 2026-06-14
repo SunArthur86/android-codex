@@ -11,6 +11,7 @@ import { CodeViewer } from './editor/code-viewer.js';
 import { CodexAnalysis } from './analysis/reverse.js';
 import { GestureManager } from './ui/gestures.js';
 import { AndroidFeatures } from './ui/android-features.js';
+import { nativeBridge } from './ui/native-bridge.js';
 
 class CodexApp {
   constructor() {
@@ -21,6 +22,7 @@ class CodexApp {
     this.terminal = null;
     this.codeViewer = null;
     this.analysis = null;
+    this._nativeBridge = nativeBridge;
     this.currentView = 'chat';
     this.isRunning = false;
     this.chatHistory = [];
@@ -97,6 +99,27 @@ class CodexApp {
     this.android.onStatusChange((online) => {
       this._toast(online ? '🌐 已连接网络' : '📴 网络已断开', online ? 'success' : 'error');
     });
+
+    // Setup native bridge status callbacks
+    nativeBridge.onStatusChange((online) => {
+      this._updateConnectionBadge(online);
+    });
+    this._updateConnectionBadge(nativeBridge.isOnline());
+
+    // Mark native mode in UI
+    if (nativeBridge.isNative) {
+      document.body.classList.add('native-mode');
+      // Add native mode badge to app bar
+      const appBar = document.querySelector('.app-bar-right');
+      const badge = document.createElement('div');
+      badge.className = 'native-badge';
+      badge.textContent = '🤖 NATIVE';
+      badge.style.cssText = 'font-size:10px;padding:2px 6px;border-radius:8px;background:var(--success);color:#fff;margin-right:4px;font-weight:700;';
+      appBar.insertBefore(badge, appBar.firstChild);
+
+      // Request battery optimization exemption for long-running agent
+      nativeBridge.requestBatteryOptimizationExemption();
+    }
 
     // Setup UI
     this._setupNavigation();
@@ -308,6 +331,11 @@ class CodexApp {
     // Wake lock — keep screen on during agent execution
     if (this.android) this.android.requestWakeLock();
 
+    // Start background service in native mode (keep running 4-5h)
+    if (nativeBridge.isNative) {
+      nativeBridge.startAgentService(message.substring(0, 100));
+    }
+
     // Clear previous reasoning/tools
     document.getElementById('reasoning-panel').style.display = 'none';
     document.getElementById('reasoning-body').innerHTML = '';
@@ -315,7 +343,7 @@ class CodexApp {
     document.getElementById('tool-timeline').innerHTML = '';
 
     // Vibration feedback on send
-    if (this.android) this.android.vibrate('light');
+    this.vibrate('light');
 
     try {
       const result = await this.agentLoop.run(message);
@@ -323,13 +351,19 @@ class CodexApp {
     } catch (err) {
       typing.remove();
       this._addMessage('agent', `❌ 错误: ${err.message}`);
-      if (this.android) this.android.vibrate('error');
+      this.vibrate('error');
       console.error(err);
     }
 
       this._setRunning(false);
       // Release wake lock
       if (this.android) this.android.releaseWakeLock();
+      // Stop background service in native mode
+      if (nativeBridge.isNative) {
+        nativeBridge.stopAgentService();
+      }
+      // Send task completion notification
+      this.notifyTaskComplete('Codex Agent 完成', 'Agent 任务已执行完毕');
     }
 
   _setRunning(running) {
@@ -582,6 +616,103 @@ class CodexApp {
       toast.style.transition = 'opacity .25s';
       setTimeout(() => toast.remove(), 250);
     }, duration);
+  }
+
+  vibrate(pattern) {
+    // Use nativeBridge if available, else AndroidFeatures, else navigator
+    if (this._nativeBridge?.isNative) {
+      this._nativeBridge.vibrate(pattern);
+    } else if (this.android) {
+      this.android.vibrate(pattern);
+    }
+  }
+
+  // ═══ Native Bridge Integration ═══
+
+  /** 更新连接状态徽章 */
+  _updateConnectionBadge(online) {
+    let badge = document.getElementById('conn-badge');
+    if (!badge) {
+      badge = document.createElement('div');
+      badge.id = 'conn-badge';
+      badge.className = 'conn-status';
+      document.body.appendChild(badge);
+    }
+    badge.className = `conn-status ${online ? 'online' : 'offline'}`;
+    badge.innerHTML = `<span class="conn-dot"></span> ${online ? '在线' : '离线'}`;
+  }
+
+  /**
+   * 启动后台 Agent 服务（原生模式独有）
+   * 让 Agent 在后台持续运行 4-5 小时
+   */
+  startBackgroundAgent(task) {
+    if (nativeBridge.startAgentService(task)) {
+      this._toast('🚀 后台 Agent 服务已启动', 'success');
+      // Show agent status bar
+      const bar = document.getElementById('agent-status-bar') || this._createAgentStatusBar();
+      bar.classList.add('visible');
+      return true;
+    }
+    this._toast('后台服务仅在原生模式可用', 'info');
+    return false;
+  }
+
+  /** 停止后台 Agent 服务 */
+  stopBackgroundAgent() {
+    if (nativeBridge.stopAgentService()) {
+      this._toast('⏹️ 后台 Agent 服务已停止', 'info');
+      const bar = document.getElementById('agent-status-bar');
+      if (bar) bar.classList.remove('visible');
+    }
+  }
+
+  /** 创建 Agent 状态栏 */
+  _createAgentStatusBar() {
+    const bar = document.createElement('div');
+    bar.id = 'agent-status-bar';
+    bar.className = 'agent-status-bar';
+    bar.innerHTML = `
+      <div class="spinner"></div>
+      <span>Agent 服务运行中</span>
+      <button class="mini-btn" style="margin-left:auto;padding:2px 8px;height:auto;font-size:11px;" onclick="codexApp.stopBackgroundAgent()">停止</button>
+    `;
+    document.body.appendChild(bar);
+    return bar;
+  }
+
+  /**
+   * 发送任务完成通知
+   * 原生模式: Android 通知栏
+   * PWA 模式: 浏览器通知 API
+   */
+  async notifyTaskComplete(title, summary) {
+    await nativeBridge.showNotification(title, summary);
+    nativeBridge.vibrate('success');
+  }
+
+  /**
+   * 分享对话内容
+   */
+  async shareContent(title, text) {
+    const ok = await nativeBridge.share(title, text);
+    if (ok) {
+      nativeBridge.vibrate('light');
+    } else {
+      this._toast('分享失败', 'error');
+    }
+  }
+
+  /**
+   * 复制到剪贴板（原生优先）
+   */
+  async copy(text) {
+    const ok = await nativeBridge.copyToClipboard(text);
+    if (ok) {
+      this._toast('📋 已复制', 'success', 1500);
+      nativeBridge.vibrate('light');
+    }
+    return ok;
   }
 }
 

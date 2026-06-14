@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- App sandbox workspace -->
+    <external-files-path
+        name="workspace"
+        path="workspace/" />
+
+    <!-- Cached files -->
+    <cache-path
+        name="cache"
+        path="." />
+
+    <!-- Files directory -->
+    <files-path
+        name="files"
+        path="." />
+
+    <!-- External storage root -->
+    <external-path
+        name="external"
+        path="." />
+</paths>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Codex Mobile — Color Palette
+    Mirrors the CSS theme variables from css/mobile.css for visual consistency
+    between the PWA layer and the native Android shell.
+-->
+<resources>
+    <!-- ═══ Dark Theme Backgrounds ═══ -->
+    <color name="bg_primary">#0D1117</color>
+    <color name="bg_secondary">#161B22</color>
+    <color name="bg_tertiary">#21262D</color>
+    <color name="bg_elevated">#1C2128</color>
+    <color name="bg_surface">#22272E</color>
+
+    <!-- ═══ Dark Theme Text ═══ -->
+    <color name="text_primary">#E6EDF3</color>
+    <color name="text_secondary">#7D8590</color>
+    <color name="text_tertiary">#484F58</color>
+
+    <!-- ═══ Accent ═══ -->
+    <color name="accent">#2F81F7</color>
+    <color name="accent_hover">#1F6FEB</color>
+    <color name="accent_bg">#1F2F81F7</color> <!-- 12% alpha overlay -->
+
+    <!-- ═══ Semantic Colors ═══ -->
+    <color name="success">#3FB950</color>
+    <color name="warning">#D29922</color>
+    <color name="error">#F85149</color>
+
+    <!-- ═══ Borders / Dividers ═══ -->
+    <color name="border">#30363D</color>
+    <color name="border_muted">#21262D</color>
+
+    <!-- ═══ Light Theme (for day-night support) ═══ -->
+    <color name="bg_primary_light">#FFFFFF</color>
+    <color name="bg_secondary_light">#F6F8FA</color>
+    <color name="text_primary_light">#1F2328</color>
+    <color name="text_secondary_light">#656D76</color>
+    <color name="accent_light">#0969DA</color>
+    <color name="border_light">#D0D7DE</color>
+
+    <!-- ═══ Status Bar / Splash ═══ -->
+    <color name="status_bar_dark">#0D1117</color>
+    <color name="status_bar_light">#F6F8FA</color>
+    <color name="splash_bg">#0D1117</color>
+
+    <!-- ═══ Notification ═══ -->
+    <color name="notification_icon_bg">#2F81F7</color>
+    <color name="notification_accent">#3FB950</color>
+</resources>
