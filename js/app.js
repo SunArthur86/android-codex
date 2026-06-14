@@ -16,6 +16,9 @@ import { nativeBridge } from './ui/native-bridge.js';
 import { HistoryManager } from './ui/history-manager.js';
 import { ProjectTemplates } from './ui/templates.js';
 import { OfflineCache } from './api/offline-cache.js';
+import SnippetsManager from './ui/snippets.js';
+import MarkdownViewer from './ui/markdown-viewer.js';
+import DiffViewer from './ui/diff-viewer.js';
 
 class CodexApp {
   constructor() {
@@ -117,6 +120,16 @@ class CodexApp {
     // Init Offline Cache (离线 AI 缓存)
     this.offlineCache = new OfflineCache({ enabled: this.settings.offlineCache !== false });
     await this.offlineCache.init();
+
+    // Init Snippets Manager (代码片段)
+    this.snippets = new SnippetsManager({ fileManager: this.fileManager });
+    await this.snippets.init();
+
+    // Init Markdown Viewer (Markdown 渲染)
+    this.markdownViewer = new MarkdownViewer({ codeViewer: this.codeViewer });
+
+    // Init Diff Viewer (文件差异对比)
+    this.diffViewer = new DiffViewer();
 
     // Setup online/offline indicator
     this.android.onStatusChange((online) => {

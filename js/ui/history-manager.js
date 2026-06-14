@@ -195,17 +195,20 @@ export class HistoryManager {
     const session = await this._get(id);
     if (!session) {
       this._toast('会话不存在', 'error');
-      return;
+      return null;
     }
 
     const json = JSON.stringify(session, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `session-${session.title.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_')}-${id.substring(0, 8)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `session-${session.title.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_')}-${id.substring(0, 8)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch(e) { /* headless 环境无下载 */ }
+    return json;
   }
 
   /* ── IndexedDB 底层 ────────────────────────────────────────────── */
