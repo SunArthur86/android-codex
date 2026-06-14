@@ -780,7 +780,11 @@ class AgentLoop {
       toolCalls: this.toolCallLog.slice()
     };
 
-    this.onDone(result);
+    try {
+      await this.onDone(result);
+    } catch (e) {
+      console.warn('onDone callback error:', e);
+    }
     return result;
   }
 
@@ -911,11 +915,58 @@ class AgentLoop {
       fetchOptions.signal = this._abortController.signal;
     }
 
-    const response = await fetch(this.baseUrl, fetchOptions);
+    // ── Retry logic for transient API failures ──
+    let response;
+    const _sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-    if (!response.ok) {
+    for (let _attempt = 0; ; _attempt++) {
+      try {
+        response = await fetch(this.baseUrl, fetchOptions);
+      } catch (netErr) {
+        // Network error (fetch threw) — retry up to 2 times
+        if (this._abortController?.signal?.aborted) throw netErr;
+        if (_attempt < 2) {
+          console.warn(`Network error (attempt ${_attempt + 1}/2), retrying in 2s…`, netErr.message);
+          await _sleep(2000);
+          continue;
+        }
+        throw new Error(`网络错误，请检查连接后重试: ${netErr.message}`);
+      }
+
+      if (response.ok) break; // ✅ success — proceed to SSE parsing
+
+      const status = response.status;
+
+      // 401 — auth failure, never retry
+      if (status === 401) {
+        throw new Error('API Key 无效或已过期，请在设置中更新');
+      }
+
+      // 429 — rate-limited, wait 2s, retry up to 3 times
+      if (status === 429) {
+        if (_attempt < 3) {
+          console.warn(`Rate-limited (429), attempt ${_attempt + 1}/3, retrying in 2s…`);
+          await _sleep(2000);
+          continue;
+        }
+        const errText = await response.text().catch(() => '');
+        throw new Error(`API 频率限制 (429): ${errText || response.statusText}`);
+      }
+
+      // 500 / 502 / 503 — server error, wait 1s, retry up to 3 times
+      if (status === 500 || status === 502 || status === 503) {
+        if (_attempt < 3) {
+          console.warn(`Server error (${status}), attempt ${_attempt + 1}/3, retrying in 1s…`);
+          await _sleep(1000);
+          continue;
+        }
+        const errText = await response.text().catch(() => '');
+        throw new Error(`API error ${status}: ${errText || response.statusText}`);
+      }
+
+      // Other 4xx errors — no retry
       const errText = await response.text().catch(() => '');
-      throw new Error(`API error ${response.status}: ${errText || response.statusText}`);
+      throw new Error(`API error ${status}: ${errText || response.statusText}`);
     }
 
     // ── Parse SSE stream ──

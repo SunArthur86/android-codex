@@ -416,6 +416,7 @@ class SnippetsManager {
       console.error('SnippetsManager 加载失败:', err);
       this.snippets = [];
     }
+    return this.snippets;
   }
 
   /* ── 增删改 ──────────────────────────────────────────────────── */

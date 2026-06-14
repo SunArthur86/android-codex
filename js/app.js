@@ -605,10 +605,12 @@ class CodexApp {
       }
     } catch (e) { console.warn('Cache save failed:', e); }
     // Stop background service if native
-    if (this._nativeBridge?.isNative) {
-      this._nativeBridge.stopAgentService();
-      this._nativeBridge.notifyTaskComplete('Codex Mobile', '任务已完成');
-    }
+    try {
+      if (this._nativeBridge?.isNative) {
+        this._nativeBridge.stopAgentService();
+        this._nativeBridge.notifyTaskComplete('Codex Mobile', '任务已完成');
+      }
+    } catch (e) { console.warn('Native bridge cleanup failed:', e); }
   }
 
   // ═══════════════════════════════════════════════════════════════
