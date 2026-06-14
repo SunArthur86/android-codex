@@ -927,7 +927,8 @@ class AgentLoop {
           content: '',
           reasoning_content: '',
           tool_calls: []
-        }
+        },
+        finish_reason: null
       }],
       usage: null
     };
@@ -956,9 +957,20 @@ class AgentLoop {
         let chunk;
         try { chunk = JSON.parse(data); } catch { continue; }
 
-        const delta = chunk.choices?.[0]?.delta;
+        const choice = chunk.choices?.[0];
+        if (!choice) {
+          if (chunk.usage) result.usage = chunk.usage;
+          continue;
+        }
+
+        const delta = choice.delta;
+        
+        // Capture finish_reason
+        if (choice.finish_reason) {
+          result.choices[0].finish_reason = choice.finish_reason;
+        }
+        
         if (!delta) {
-          // Capture usage from final chunk
           if (chunk.usage) result.usage = chunk.usage;
           continue;
         }
@@ -1054,28 +1066,28 @@ class AgentLoop {
     try {
       switch (toolName) {
         case 'read_file':
-          return this._toolReadFile(args);
+          return await this._toolReadFile(args);
 
         case 'write_file':
-          return this._toolWriteFile(args);
+          return await this._toolWriteFile(args);
 
         case 'patch_file':
-          return this._toolPatchFile(args);
+          return await this._toolPatchFile(args);
 
         case 'search_files':
-          return this._toolSearchFiles(args);
+          return await this._toolSearchFiles(args);
 
         case 'list_files':
-          return this._toolListFiles(args);
+          return await this._toolListFiles(args);
 
         case 'run_command':
-          return this._toolRunCommand(args);
+          return await this._toolRunCommand(args);
 
         case 'analyze':
-          return this._toolAnalyze(args);
+          return await this._toolAnalyze(args);
 
         case 'create_file':
-          return this._toolCreateFile(args);
+          return await this._toolCreateFile(args);
 
         default:
           return JSON.stringify({ error: `Unknown tool: ${toolName}` });
@@ -1085,8 +1097,69 @@ class AgentLoop {
     }
   }
 
-  _toolReadFile({ path }) {
-    const content = this.fs.read(path);
+  /**
+   * 兼容 VirtualFS (同步) 和 FileManager (异步 IndexedDB)
+   */
+  async _fsRead(path) {
+    // VirtualFS.sync read
+    if (typeof this.fs.read === 'function') {
+      return this.fs.read(path);
+    }
+    // FileManager async read
+    if (typeof this.fs.readFile === 'function') {
+      const data = await this.fs.readFile(path);
+      if (!data) throw new Error(`File not found: ${path}`);
+      return typeof data === 'string' ? data : data.content;
+    }
+    throw new Error('No file system read method available');
+  }
+
+  async _fsWrite(path, content) {
+    if (typeof this.fs.write === 'function') {
+      return this.fs.write(path, content);
+    }
+    if (typeof this.fs.writeFile === 'function') {
+      await this.fs.writeFile(path, content);
+      return `File written: ${path} (${content.length} bytes)`;
+    }
+    throw new Error('No file system write method available');
+  }
+
+  async _fsPatch(path, oldStr, newStr) {
+    if (typeof this.fs.patch === 'function') {
+      return this.fs.patch(path, oldStr, newStr);
+    }
+    if (typeof this.fs.patchFile === 'function') {
+      const ok = await this.fs.patchFile(path, oldStr, newStr);
+      if (!ok) throw new Error(`Patch failed: old_string not found in ${path}`);
+      return `File patched: ${path}`;
+    }
+    throw new Error('No file system patch method available');
+  }
+
+  async _fsList(path) {
+    if (typeof this.fs.list === 'function') {
+      return this.fs.list(path);
+    }
+    if (typeof this.fs.listFiles === 'function') {
+      const items = await this.fs.listFiles(path);
+      return items.map(f => ({ name: f.name, type: f.isFolder ? 'dir' : 'file', size: f.size || 0 }));
+    }
+    return [];
+  }
+
+  async _fsSearch(query, path) {
+    if (typeof this.fs.search === 'function') {
+      return this.fs.search(query, path);
+    }
+    if (typeof this.fs.searchFiles === 'function') {
+      return await this.fs.searchFiles(query, path);
+    }
+    return [];
+  }
+
+  async _toolReadFile({ path }) {
+    const content = await this._fsRead(path);
     const truncated = content.length > MAX_FILE_READ_CHARS;
     const result = truncated
       ? content.slice(0, MAX_FILE_READ_CHARS) + '\n... [truncated]'
@@ -1094,28 +1167,28 @@ class AgentLoop {
     return result;
   }
 
-  _toolWriteFile({ path, content }) {
-    return this.fs.write(path, content);
+  async _toolWriteFile({ path, content }) {
+    return await this._fsWrite(path, content);
   }
 
-  _toolPatchFile({ path, old_string, new_string }) {
-    return this.fs.patch(path, old_string, new_string);
+  async _toolPatchFile({ path, old_string, new_string }) {
+    return await this._fsPatch(path, old_string, new_string);
   }
 
-  _toolSearchFiles({ query, path }) {
-    const results = this.fs.search(query, path || '/');
-    if (results.length === 0) {
+  async _toolSearchFiles({ query, path }) {
+    const results = await this._fsSearch(query, path || '/');
+    if (!results || results.length === 0) {
       return 'No matches found.';
     }
     const formatted = results.map(r =>
-      `${r.file}:${r.line}: ${r.content}`
+      `${r.file || r.path}:${r.line || ''}: ${r.content || r.match || ''}`
     ).join('\n');
     return `${results.length} match(es) found:\n${formatted}`;
   }
 
-  _toolListFiles({ path }) {
-    const entries = this.fs.list(path || '/');
-    if (entries.length === 0) {
+  async _toolListFiles({ path }) {
+    const entries = await this._fsList(path || '/');
+    if (!entries || entries.length === 0) {
       return 'Directory is empty or does not exist.';
     }
     const formatted = entries.map(e => {
@@ -1140,8 +1213,8 @@ class AgentLoop {
     return JSON.stringify(analysis, null, 2);
   }
 
-  _toolCreateFile({ path, content, type }) {
-    const writeResult = this.fs.write(path, content);
+  async _toolCreateFile({ path, content, type }) {
+    const writeResult = await this._fsWrite(path, content);
     const typeInfo = type ? ` (type: ${type})` : '';
     return `${writeResult}${typeInfo}`;
   }

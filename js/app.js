@@ -8,10 +8,14 @@ import { GLMClient } from './api/glm.js';
 import { FileManager } from './files/file-manager.js';
 import { MobileTerminal } from './terminal/mobile-term.js';
 import { CodeViewer } from './editor/code-viewer.js';
+import { CodeEditor } from './editor/code-editor.js';
 import { CodexAnalysis } from './analysis/reverse.js';
 import { GestureManager } from './ui/gestures.js';
 import { AndroidFeatures } from './ui/android-features.js';
 import { nativeBridge } from './ui/native-bridge.js';
+import { HistoryManager } from './ui/history-manager.js';
+import { ProjectTemplates } from './ui/templates.js';
+import { OfflineCache } from './api/offline-cache.js';
 
 class CodexApp {
   constructor() {
@@ -51,6 +55,7 @@ class CodexApp {
       maxIterations: this.settings.maxIterations,
       approvalMode: this.settings.approvalMode,
       temperature: this.settings.temperature,
+      fs: this.fileManager,  // Bridge IndexedDB FileManager to AgentLoop
       onReasoning: (text) => this._showReasoning(text),
       onReasoningChunk: (chunk) => this._appendReasoningChunk(chunk),
       onContentChunk: (chunk) => this._appendContentChunk(chunk),
@@ -84,6 +89,12 @@ class CodexApp {
       fileManager: this.fileManager,
     });
 
+    // Init Code Editor (可编辑)
+    this.codeEditor = new CodeEditor({
+      container: document.body,
+      fileManager: this.fileManager,
+    });
+
     // Init Codex Analysis
     this.analysis = new CodexAnalysis();
     this.analysis.renderAll();
@@ -94,6 +105,18 @@ class CodexApp {
     // Init Gesture Manager (swipe tabs, pull-refresh, long-press)
     this.gestures = new GestureManager({ app: this });
     this.gestures.enable();
+
+    // Init History Manager (会话历史)
+    this.historyManager = new HistoryManager({ app: this });
+    await this.historyManager.init();
+
+    // Init Project Templates (项目模板)
+    this.templates = new ProjectTemplates({ fileManager: this.fileManager, app: this });
+    await this.templates.init();
+
+    // Init Offline Cache (离线 AI 缓存)
+    this.offlineCache = new OfflineCache({ enabled: this.settings.offlineCache !== false });
+    await this.offlineCache.init();
 
     // Setup online/offline indicator
     this.android.onStatusChange((online) => {
@@ -458,8 +481,12 @@ class CodexApp {
     container.scrollTop = container.scrollHeight;
   }
 
-  _showToolCall(tool, args) {
+  _showToolCall(info) {
+    // Loop passes {id, name, args, iteration} — normalize
+    const tool = typeof info === 'string' ? info : (info?.name || 'unknown');
+    const args = (typeof info === 'string') ? {} : (info?.args || {});
     const timeline = document.getElementById('tool-timeline');
+    if (!timeline) return;
     const entry = document.createElement('div');
     entry.className = 'tool-entry';
     entry.innerHTML = `
@@ -468,11 +495,14 @@ class CodexApp {
     `;
     timeline.appendChild(entry);
     const container = document.getElementById('chat-messages');
-    container.scrollTop = container.scrollHeight;
+    if (container) container.scrollTop = container.scrollHeight;
   }
 
-  _showToolResult(tool, result) {
+  _showToolResult(info) {
+    // Loop passes {id, name, result, iteration} — normalize
+    const result = typeof info === 'string' ? info : (info?.result || '');
     const timeline = document.getElementById('tool-timeline');
+    if (!timeline) return;
     const entries = timeline.querySelectorAll('.tool-entry');
     const last = entries[entries.length - 1];
     if (last) {
@@ -496,8 +526,13 @@ class CodexApp {
     if (msgText) this._addMessage('agent', msgText);
   }
 
-  async _requestApproval(tool, args) {
+  async _requestApproval(info) {
+    // Loop passes {name, args} — normalize
+    const tool = typeof info === 'string' ? info : (info?.name || 'unknown');
+    const args = typeof info === 'string' ? {} : (info?.args || {});
     return new Promise((resolve) => {
+      // Auto-approve in full-auto mode
+      if (this.settings.approvalMode === 'full-auto') { resolve(true); return; }
       const dialog = document.getElementById('approval-dialog');
       const title = document.getElementById('approval-title');
       const desc = document.getElementById('approval-desc');
@@ -505,6 +540,7 @@ class CodexApp {
       const btnYes = document.getElementById('btn-approve-yes');
       const btnNo = document.getElementById('btn-approve-deny');
 
+      if (!dialog) { resolve(true); return; }
       title.textContent = `确认: ${tool}`;
       desc.textContent = `参数: ${JSON.stringify(args, null, 2)}`;
 
@@ -532,8 +568,34 @@ class CodexApp {
     });
   }
 
-  _onAgentDone(result) {
+  async _onAgentDone(result) {
     console.log('Agent done:', result);
+    // Auto-save session history
+    try {
+      if (this.historyManager && result.response) {
+        const history = this.agentLoop.history.filter(m => m.role === 'user' || m.role === 'assistant');
+        if (history.length > 0) {
+          await this.historyManager.autoSave(history, this.settings.model, this.agentLoop.getTokenStats());
+          console.log('✅ History auto-saved');
+        }
+      }
+    } catch (e) { console.warn('History save failed:', e); }
+    // Cache response for offline use
+    try {
+      if (this.offlineCache && this.offlineCache.enabled && result.response) {
+        await this.offlineCache.store(
+          this.agentLoop.history.filter(m => m.role === 'user' || m.role === 'assistant').slice(-4),
+          this.settings.model,
+          this.settings.temperature,
+          result.response
+        );
+      }
+    } catch (e) { console.warn('Cache save failed:', e); }
+    // Stop background service if native
+    if (this._nativeBridge?.isNative) {
+      this._nativeBridge.stopAgentService();
+      this._nativeBridge.notifyTaskComplete('Codex Mobile', '任务已完成');
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -581,6 +643,22 @@ class CodexApp {
           await this._renderFileList(file.path);
         } else {
           await this.codeViewer.show(file.path);
+        }
+      });
+      // Long press to open editor
+      let pressTimer = null;
+      item.addEventListener('touchstart', () => {
+        pressTimer = setTimeout(async () => {
+          if (!file.isFolder) {
+            await this.codeEditor.open(file.path);
+          }
+        }, 600);
+      });
+      item.addEventListener('touchend', () => { clearTimeout(pressTimer); });
+      // Double-click to edit on desktop
+      item.addEventListener('dblclick', async () => {
+        if (!file.isFolder) {
+          await this.codeEditor.open(file.path);
         }
       });
       list.appendChild(item);
