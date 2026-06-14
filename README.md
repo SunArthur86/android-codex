@@ -2,10 +2,11 @@
 
 **基于 OpenAI Codex CLI 架构的 Android AI 编程 Agent (PWA)**
 
-一个忠实复刻 Codex CLI 架构的移动端 AI 编码助手，可直接在 Android 浏览器或"添加到主屏幕"后作为原生 App 使用。
+v2.0 — 增加离线缓存、SSE 流式推理、Android 手势、原生 API 集成
 
 ## ✨ 核心特性
 
+### v1.0 基础架构
 | 特性 | 说明 |
 |------|------|
 | 🧠 **Agent Loop** | 忠实复刻 Codex 的事件驱动循环：LLM → 推理 → 工具调用 → 迭代 |
@@ -14,32 +15,36 @@
 | 📁 **虚拟文件系统** | IndexedDB 持久化，支持完整 CRUD + 搜索 |
 | 💻 **内置终端** | 18+ 命令模拟器，支持历史导航 |
 | 🔬 **Codex 逆向分析** | 架构/工具/对比/流程/配置 五大维度深度分析 |
-| 🌗 **深色/浅色主题** | Material Design 3 配色系统 |
-| 📱 **PWA 安装** | 添加到主屏幕，全屏体验 |
-| 📡 **GLM 驱动** | 默认 GLM-4-Plus，支持流式 SSE |
 
-## 📸 截图
+### v2.0 新增 — Android 原生体验
+| 特性 | 说明 |
+|------|------|
+| 📡 **SSE 流式推理** | 实时显示 reasoning_content 和 content，逐字符流式输出 |
+| 📴 **Service Worker** | PWA 离线缓存，静态资源 cache-first，运行时 stale-while-revalidate |
+| 👆 **手势控制** | 左右滑动切换 Tab，下拉刷新，长按弹出上下文菜单 |
+| ⚡ **Wake Lock** | Agent 执行时保持屏幕常亮，执行完毕自动释放 |
+| 📳 **震动反馈** | 发送消息、工具调用、错误提示都有触觉反馈 |
+| 🔗 **Web Share API** | 分享对话内容到其他 App |
+| 🔋 **电池监控** | 低电量时智能降级 |
+| 📋 **剪贴板 API** | 一键复制代码和对话 |
 
-| 欢迎界面 | 文件管理器 | 代码查看器 |
-|---------|----------|----------|
-| 深色主题 + 特性展示 | IndexedDB 虚拟 FS | 语法高亮 + 行号 |
+## 📸 界面预览
 
-| 终端模拟器 | Codex 逆向分析 | 设置面板 |
-|-----------|--------------|---------|
-| 18+ 命令支持 | 5 维度架构解析 | API Key / 模型 / 审批 |
+深色 Material Design 3 界面，390×844 移动端视口，4-Tab 底部导航（对话/文件/终端/分析）
 
 ## 🏗️ 架构
 
 ```
 android-codex/
-├── index.html              # HTML 入口 (PWA meta + viewport)
+├── index.html              # HTML 入口 (PWA + Service Worker 注册)
 ├── manifest.json           # PWA manifest
+├── sw.js                   # Service Worker (离线缓存策略)
 ├── css/
-│   └── mobile.css          # Material Design 3 + 深色/浅色主题
+│   └── mobile.css          # Material Design 3 + 深色/浅色 + 流式动画
 ├── js/
-│   ├── app.js              # 主控制器 (导航/聊天/设置/Toast)
+│   ├── app.js              # 主控制器 (导航/聊天/SSE回调/手势集成)
 │   ├── agent/
-│   │   └── loop.js         # Agent Loop (8 工具 + 上下文压缩 + 审批)
+│   │   └── loop.js         # Agent Loop (8工具 + SSE流式 + 上下文压缩 + 审批)
 │   ├── api/
 │   │   └── glm.js          # GLM API Client (SSE streaming + JWT)
 │   ├── files/
@@ -47,10 +52,43 @@ android-codex/
 │   ├── terminal/
 │   │   └── mobile-term.js  # 移动终端模拟器 (18+ 命令)
 │   ├── editor/
-│   │   └── code-viewer.js  # 轻量代码查看器 (语法高亮 + 缩放)
+│   │   └── code-viewer.js  # 轻量代码查看器 (8语言高亮 + 缩放)
+│   ├── ui/
+│   │   ├── gestures.js     # 🆕 手势管理器 (滑动/长按/下拉刷新)
+│   │   └── android-features.js # 🆕 Android原生API (WakeLock/震动/分享)
 │   └── analysis/
-│       └── reverse.js      # Codex 逆向分析模块
+│       └── reverse.js      # Codex 逆向分析 (24项对比)
 └── assets/
+```
+
+## 🔬 Codex CLI 对比 (v2.0)
+
+| 功能 | CLI 桌面版 | 移动版 v2.0 |
+|------|:---------:|:----------:|
+| Agent Loop | ✅ | ✅ |
+| Tool Calling (8 tools) | ✅ | ✅ |
+| Reasoning Chain | ✅ | ✅ |
+| SSE Streaming | ✅ | ✅ |
+| Approval Modes | ✅ | ✅ |
+| Context Compaction | ✅ | ✅ |
+| Prompt Caching | ✅ | ⚡ 部分 |
+| AGENTS.md Cascade | ✅ | ⚡ 部分 |
+| MCP Support | ✅ | ❌ |
+| Offline PWA | ❌ | ✅ |
+| Touch UI | ❌ | ✅ |
+| Gesture Controls | ❌ | ✅ |
+| Wake Lock | ❌ | ✅ |
+| Haptic Feedback | ❌ | ✅ |
+| Web Share | ❌ | ✅ |
+| Battery Monitor | ❌ | ✅ |
+
+## 🧪 测试
+
+```
+v1.0 核心测试: 97/97 ✅
+v2.0 扩展测试: 42/42 ✅
+─────────────────────
+总计:           139/139 ✅  0 JS 错误
 ```
 
 ## 🚀 使用方法
@@ -59,47 +97,28 @@ android-codex/
 ```bash
 cd android-codex
 python3 -m http.server 8100
-# 浏览器打开 http://localhost:8100
 ```
 
-### Android 安装 (PWA)
-1. 在 Chrome 中打开页面
-2. 菜单 → "添加到主屏幕"
-3. 从主屏幕图标启动 → 全屏原生体验
+### Android 安装
+1. Chrome 打开页面 → 菜单 → **"添加到主屏幕"**
+2. 从主屏幕图标启动 → 全屏原生体验
+3. Service Worker 自动注册，支持离线使用
 
 ### 配置
-1. 点击右上角 ⚙️ 设置
+1. 点击 ⚙️ 设置
 2. 输入 GLM API Key
 3. 选择模型（推荐 GLM-4-Plus）
-4. 设置审批模式
+4. 选择审批模式
 5. 保存 → 开始对话
-
-## 🔬 Codex 逆向分析
-
-内置 5 维度 Codex CLI 架构分析：
-
-1. **架构分析** — AgentLoop / ToolDispatcher / ContextManager / ApprovalSystem / ReasoningChain
-2. **工具系统** — 8 种工具的完整定义和参数说明
-3. **功能对比** — Codex CLI (桌面) vs Codex Mobile (移动) 15 项功能对比
-4. **Agent Loop 流程** — 7 步完整流程图
-5. **配置系统** — 8 项配置参数详解
-
-## 🧪 测试
-
-```bash
-# 97 项测试全部通过
-node test-codex-mobile.js
-```
-
-测试覆盖：App 初始化、DOM 结构、底部导航、文件管理、代码查看器、终端、Codex 分析、设置面板、聊天输入、Agent Loop API、文件管理器 API、GLM API、主题切换、Toast 通知、PWA。
 
 ## 🛠️ 技术栈
 
-- **纯前端**：vanilla ES6 modules，零框架依赖
-- **存储**：IndexedDB (浏览器内持久化)
-- **API**：GLM-4-Plus (智谱 AI)
-- **设计**：Material Design 3 配色
-- **PWA**：可安装到 Android 主屏幕
+- **纯前端**: vanilla ES6 modules，零框架
+- **存储**: IndexedDB (浏览器持久化)
+- **PWA**: Service Worker + Web App Manifest
+- **API**: GLM-4-Plus (智谱 AI) + SSE streaming
+- **Android API**: Wake Lock, Vibration, Web Share, Battery, Clipboard
+- **设计**: Material Design 3 深色/浅色主题
 
 ## 📄 License
 

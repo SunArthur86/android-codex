@@ -9,6 +9,8 @@ import { FileManager } from './files/file-manager.js';
 import { MobileTerminal } from './terminal/mobile-term.js';
 import { CodeViewer } from './editor/code-viewer.js';
 import { CodexAnalysis } from './analysis/reverse.js';
+import { GestureManager } from './ui/gestures.js';
+import { AndroidFeatures } from './ui/android-features.js';
 
 class CodexApp {
   constructor() {
@@ -46,7 +48,10 @@ class CodexApp {
       model: this.settings.model,
       maxIterations: this.settings.maxIterations,
       approvalMode: this.settings.approvalMode,
+      temperature: this.settings.temperature,
       onReasoning: (text) => this._showReasoning(text),
+      onReasoningChunk: (chunk) => this._appendReasoningChunk(chunk),
+      onContentChunk: (chunk) => this._appendContentChunk(chunk),
       onToolCall: (tool, args) => this._showToolCall(tool, args),
       onToolResult: (tool, result) => this._showToolResult(tool, result),
       onMessage: (text) => this._showAgentMessage(text),
@@ -80,6 +85,18 @@ class CodexApp {
     // Init Codex Analysis
     this.analysis = new CodexAnalysis();
     this.analysis.renderAll();
+
+    // Init Android Features (Wake Lock, Vibration, Web Share, etc.)
+    this.android = new AndroidFeatures();
+
+    // Init Gesture Manager (swipe tabs, pull-refresh, long-press)
+    this.gestures = new GestureManager({ app: this });
+    this.gestures.enable();
+
+    // Setup online/offline indicator
+    this.android.onStatusChange((online) => {
+      this._toast(online ? '🌐 已连接网络' : '📴 网络已断开', online ? 'success' : 'error');
+    });
 
     // Setup UI
     this._setupNavigation();
@@ -288,11 +305,17 @@ class CodexApp {
     const typing = this._addMessage('typing', '');
     this._setRunning(true);
 
+    // Wake lock — keep screen on during agent execution
+    if (this.android) this.android.requestWakeLock();
+
     // Clear previous reasoning/tools
     document.getElementById('reasoning-panel').style.display = 'none';
     document.getElementById('reasoning-body').innerHTML = '';
     document.getElementById('reasoning-body').classList.remove('collapsed');
     document.getElementById('tool-timeline').innerHTML = '';
+
+    // Vibration feedback on send
+    if (this.android) this.android.vibrate('light');
 
     try {
       const result = await this.agentLoop.run(message);
@@ -300,11 +323,14 @@ class CodexApp {
     } catch (err) {
       typing.remove();
       this._addMessage('agent', `❌ 错误: ${err.message}`);
+      if (this.android) this.android.vibrate('error');
       console.error(err);
     }
 
-    this._setRunning(false);
-  }
+      this._setRunning(false);
+      // Release wake lock
+      if (this.android) this.android.releaseWakeLock();
+    }
 
   _setRunning(running) {
     this.isRunning = running;
@@ -362,7 +388,38 @@ class CodexApp {
     const panel = document.getElementById('reasoning-panel');
     const body = document.getElementById('reasoning-body');
     panel.style.display = '';
-    body.innerHTML += text + '<br>';
+    if (typeof text === 'object' && text.text) text = text.text;
+    body.innerHTML += `<div style="margin-bottom:6px;">${text}</div>`;
+    this._scrollChat();
+  }
+
+  _appendReasoningChunk(chunk) {
+    const panel = document.getElementById('reasoning-panel');
+    const body = document.getElementById('reasoning-body');
+    panel.style.display = '';
+    // Append raw text without re-rendering (high performance)
+    body.appendChild(document.createTextNode(chunk));
+    this._scrollChat();
+  }
+
+  _appendContentChunk(chunk) {
+    // Remove typing indicator
+    const typing = document.querySelector('.msg-typing');
+    if (typing) typing.remove();
+
+    // Find or create streaming message bubble
+    let stream = document.getElementById('streaming-msg');
+    if (!stream) {
+      stream = document.createElement('div');
+      stream.id = 'streaming-msg';
+      stream.className = 'msg msg-agent';
+      document.getElementById('chat-messages').appendChild(stream);
+    }
+    stream.textContent += chunk;
+    this._scrollChat();
+  }
+
+  _scrollChat() {
     const container = document.getElementById('chat-messages');
     container.scrollTop = container.scrollHeight;
   }
@@ -397,7 +454,12 @@ class CodexApp {
     // Remove typing indicator
     const typing = document.querySelector('.msg-typing');
     if (typing) typing.remove();
-    this._addMessage('agent', text);
+    // Remove streaming message (already displayed via chunks)
+    const stream = document.getElementById('streaming-msg');
+    if (stream) stream.remove();
+    // Add final rendered message
+    const msgText = typeof text === 'object' ? (text.text || '') : text;
+    if (msgText) this._addMessage('agent', msgText);
   }
 
   async _requestApproval(tool, args) {

@@ -550,6 +550,8 @@ class AgentLoop {
 
     // Callbacks
     this.onReasoning = config.onReasoning || (() => {});
+    this.onReasoningChunk = config.onReasoningChunk || null;
+    this.onContentChunk = config.onContentChunk || null;
     this.onToolCall = config.onToolCall || (() => {});
     this.onToolResult = config.onToolResult || (() => {});
     this.onMessage = config.onMessage || (() => {});
@@ -892,8 +894,8 @@ class AgentLoop {
       messages,
       tools: this.tools,
       tool_choice: 'auto',
-      temperature: 0.3,
-      stream: false
+      temperature: this.temperature ?? 0.3,
+      stream: true   // ✅ SSE streaming — matches Codex CLI architecture
     };
 
     const fetchOptions = {
@@ -916,7 +918,99 @@ class AgentLoop {
       throw new Error(`API error ${response.status}: ${errText || response.statusText}`);
     }
 
-    return response.json();
+    // ── Parse SSE stream ──
+    // Accumulate content, reasoning, and tool_calls from incremental deltas
+    const result = {
+      choices: [{
+        message: {
+          role: 'assistant',
+          content: '',
+          reasoning_content: '',
+          tool_calls: []
+        }
+      }],
+      usage: null
+    };
+
+    const msg = result.choices[0].message;
+    let lastReasoningChunk = '';
+    let lastContentChunk = '';
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep incomplete line
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+
+        let chunk;
+        try { chunk = JSON.parse(data); } catch { continue; }
+
+        const delta = chunk.choices?.[0]?.delta;
+        if (!delta) {
+          // Capture usage from final chunk
+          if (chunk.usage) result.usage = chunk.usage;
+          continue;
+        }
+
+        // ── Stream reasoning_content live ──
+        if (delta.reasoning_content) {
+          msg.reasoning_content += delta.reasoning_content;
+          // Emit incremental reasoning for live display
+          if (typeof this.onReasoningChunk === 'function') {
+            this.onReasoningChunk(delta.reasoning_content);
+          }
+          lastReasoningChunk = delta.reasoning_content;
+        }
+
+        // ── Stream content live ──
+        if (delta.content) {
+          msg.content += delta.content;
+          // Emit incremental content for live display
+          if (typeof this.onContentChunk === 'function') {
+            this.onContentChunk(delta.content);
+          }
+          lastContentChunk = delta.content;
+        }
+
+        // ── Accumulate tool_calls from deltas ──
+        if (delta.tool_calls) {
+          for (const tc of delta.tool_calls) {
+            const idx = tc.index ?? 0;
+            if (!msg.tool_calls[idx]) {
+              msg.tool_calls[idx] = {
+                id: tc.id || '',
+                type: 'function',
+                function: { name: '', arguments: '' }
+              };
+            }
+            if (tc.id) msg.tool_calls[idx].id = tc.id;
+            if (tc.function?.name) msg.tool_calls[idx].function.name += tc.function.name;
+            if (tc.function?.arguments) msg.tool_calls[idx].function.arguments += tc.function.arguments;
+          }
+        }
+
+        // Capture usage
+        if (chunk.usage) result.usage = chunk.usage;
+      }
+    }
+
+    // Clean up empty tool_calls array
+    if (msg.tool_calls.length === 0) delete msg.tool_calls;
+    if (!msg.reasoning_content) delete msg.reasoning_content;
+    if (!msg.content) msg.content = '';
+
+    return result;
   }
 
   // ═══════════════════════════════════════════════════════════
